@@ -1,74 +1,95 @@
-# Lung Cancer Detection
+# 🫁 PulmoAI: Lung Cancer Detection & Malignancy Classification System
+> **5th Semester Capstone Project**  
+> *A 2-Stage CADe/CADx Deep Learning Framework for Pulmonary Nodule Detection, Malignancy Risk Grading, and Explainable AI (XAI) on CT Scans.*
 
-Lung cancer is the leading cause of cancer-related death worldwide. Screening high risk individuals for lung cancer with low-dose CT scans is now being implemented in the United States and other countries are expected to follow soon. In CT lung cancer screening, many millions of CT scans will have to be analyzed, which is an enormous burden for radiologists. Therefore there is a lot of interest to develop computer algorithms to optimize screening.
-A vital first step in the analysis of lung cancer screening CT scans is the detection of pulmonary nodules, which may or may not represent early stage lung cancer.
+---
 
-This project is about segmentation of nodules in CT scans using 2D U-Net Convolutional Neural Network architecture.
+## 📌 Project Overview
+Lung cancer remains one of the leading causes of cancer-related mortality globally. Early detection of malignant pulmonary nodules via Computed Tomography (CT) scans substantially improves 5-year patient survival rates.
 
-## Dependencies
-- numpy
-- pandas
-- opencv
-- SimpleITK
-- scikit-learn
-- scikit-image
-- tensorflow
-- matplotlib
+This project implements an end-to-end Computer-Aided Detection and Diagnosis (CADe/CADx) pipeline inspired by state-of-the-art literature published in *ScienceDirect (Biomedical Engineering Advances, 2025)*.
 
-<!-- ## Run on custom image
+```mermaid
+flowchart LR
+    A[Thoracic CT Scan] --> B[Lung ROI Extraction]
+    B --> C[Stage 1: Attention U-Net Nodule Segmentation]
+    C --> D[Stage 2: Transfer Learning Malignancy Classifier]
+    D --> E[Explainable AI: Grad-CAM Saliency Maps]
+    E --> F[Interactive Streamlit Doctor Web Dashboard]
 ```
-py custom_image_input.py <image>
+
+---
+
+## ✨ Key Features & Architecture
+
+1. **Stage 1: Attention U-Net Nodule Segmentation**
+   * Incorporates **Spatial Attention Gates** to focus on suspicious lung lesions while filtering out normal vascular tree markings and rib bone artifacts.
+   * Uses **Combo Loss (Focal Tversky Loss + BCE)** to overcome the extreme class imbalance in CT scans where nodules occupy $<0.1\%$ of total volume.
+
+2. **Stage 2: Malignancy Classification (Benign vs. Malignant)**
+   * Extracts detected nodule candidate patches and classifies them into **Benign (Low Risk)** vs. **Malignant (Cancerous)** using transfer learning backbones (**EfficientNet-V2 / ResNet-50**).
+
+3. **Explainable AI (Grad-CAM XAI)**
+   * Generates saliency heatmaps showing the morphological features (spiculation, density, ground-glass opacity) that influenced the prediction, overcoming the clinical "black box" hurdle.
+
+4. **Clinical Evaluation Metrics**
+   * Tracks **Sensitivity (Recall)**, **Specificity**, **Precision (PPV)**, **NPV**, **F1-Score**, **ROC-AUC**, and **Dice Similarity Coefficient**.
+
+5. **Interactive Web Dashboard (`app.py`)**
+   * Built with **Streamlit** for real-time CT slice upload, segmentation mask overlay, malignancy confidence gauges, and clinical report exports.
+
+---
+
+## 📂 Repository Structure
+
 ```
-replace ```<image>``` with image location -->
+Lung_Cancer_Detection/
+├── app.py                      # Interactive Streamlit Web UI Application
+├── src/
+│   ├── models/
+│   │   ├── attention_unet.py   # Attention U-Net architecture & custom losses
+│   │   └── malignancy_classifier.py # Stage-2 Transfer Learning Classifier
+│   ├── xai/
+│   │   └── gradcam.py          # Grad-CAM visual explainability module
+│   ├── evaluation/
+│   │   └── metrics.py          # Clinical & segmentation metrics calculator
+│   └── utils/
+│       └── ct_processor.py     # HU normalization, Lung ROI, & nodule cropper
+├── notebooks/
+│   ├── v1/                     # Baseline exploratory notebooks
+│   └── v2/                     # Enhanced LUNA16 dataset processing notebooks
+├── DATA/
+│   └── annotations.csv         # LUNA16 ground-truth nodule coordinates
+└── README.md
+```
 
-## Dataset
-The [LUNA16](https://luna16.grand-challenge.org/) dataset has been used in this project. 
+---
 
-## Preprocessing
-The CT-Scans images passed through various preprocessing steps before inputting it to U-Net model for more accurate result. These processes includes segmenting the ROI (the lungs) from the surrounding regions of bones and fatty tissues. These include
-- Binary Thresholding
-- Erosion & Dilation for removing noise
-- Filling Holes by contours
-- Extracting Lungs
-- Extracting nodule masks
+## 🚀 Quick Start & Installation
 
-<p align="center">
-<img width="737" alt="preprocessing_steps" src="https://user-images.githubusercontent.com/56977388/159730154-3681fc46-ca6c-4862-b779-1abb8b480887.png">
-</p>
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/Satyam-50/Lung_Cancer_Detection-capston-project-sem-5th-.git
+cd Lung_Cancer_Detection-capston-project-sem-5th-
+pip install -r requirements.txt   # or pip install tensorflow streamlit SimpleITK scikit-image opencv-python
+```
 
-## Training
-I used a 2D UNet convolutional neural network architecture which is mainly used for 
-image segmentation. U-net is an encoder-decoder deep learning model which is known to 
-be used in medical images. It is first used in biomedical image segmentation. U-net 
-contained three main blocks, downsampling, upsampling, and concatenation. 
-The dice coefficient loss is selected as the loss function. Dice coefficient as is often used 
-in medical image segmentation.
+### 2. Launch the Web Application
+```bash
+streamlit run app.py
+```
+Open `http://localhost:8501` in your browser.
 
-<p align="center">
-<img width="680" alt="unet architecture" src="https://user-images.githubusercontent.com/56977388/148122554-fdd46ffb-97ac-4cd3-807b-25a2c1b405fa.png">
-</p>
+---
 
-This model was able to achieve a dice score of <code>0.83</code> in training data and <code>0.75</code> on test data. The model was trained for 94 epochs.
+## 📊 Dataset Benchmark
+This project benchmarks against the gold-standard datasets:
+* **LUNA16 (LUng Nodule Analysis 2016)**
+* **LIDC-IDRI (Lung Image Database Consortium)**
 
-<p align="center">
-<!-- <img width="600" alt="unet accuracy" src="https://user-images.githubusercontent.com/56977388/148122622-71cf02be-11f1-4997-9d8d-6ab0ee497ff2.png"> -->
-<img width="600" alt="unet accuracy" src="https://user-images.githubusercontent.com/56977388/171506203-3ac08d79-8146-44d9-979e-fe17d2eb5ff5.png">
+For training locally, download `subset0.zip` from [Kaggle LUNA16](https://www.kaggle.com/datasets/luna16) and place it in `DATA/subset0/`.
 
-</p>
+---
 
-<!-- ![image](https://user-images.githubusercontent.com/56977388/148122622-71cf02be-11f1-4997-9d8d-6ab0ee497ff2.png) -->
-
-## Result
-
-Below shown predictions on randomly chosen test sample. In Each box left figure shows lung with actual tumor highlighted in white and right figure shows predicted tumor highlighted in white.
-
-<p align="center">
-<!-- <img alt="result" src="https://user-images.githubusercontent.com/56977388/148122681-983d9e70-e5b6-4081-9fb7-233b5941bf9c.png"> -->
-<img alt="result" src="https://user-images.githubusercontent.com/56977388/171507556-703b848b-2b8a-4329-b056-10367c40c856.png">
-
-<!-- ![image](https://user-images.githubusercontent.com/56977388/148122681-983d9e70-e5b6-4081-9fb7-233b5941bf9c.png) -->
-</p>
-
-## License
-
-Licensed under the MIT License.
+## 📜 Academic Reference
+* *Nguyen, M.N. (2025). "A scoping review of deep learning approaches for lung cancer detection using chest radiographs and computed tomography scans." Biomedical Engineering Advances, Elsevier (ScienceDirect).*
