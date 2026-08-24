@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Large raw CT Datasets (MHD/RAW)
+*.mhd
+*.raw
+DATA/subset*/
+DATA/*.zip
+DATA/*.tar.gz
+
+# OS specific
+.DS_Store
+Thumbs.db
