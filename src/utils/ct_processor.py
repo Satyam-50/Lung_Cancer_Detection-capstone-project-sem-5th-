@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from skimage import morphology, measure
+from skimage import measure, morphology, segmentation
 
 def normalize_ct(slice_img, min_hu=-1000.0, max_hu=400.0):
     """
@@ -26,7 +26,7 @@ def extract_lung_roi(img_2d):
     _, binary = cv2.threshold(img_uint8, 70, 255, cv2.THRESH_BINARY_INV)
     
     # 2. Clear borders to remove external scanner bed/air
-    cleared = morphology.clear_border(binary > 0)
+    cleared = segmentation.clear_border(binary > 0)
     
     # 3. Label connected components
     label_image = measure.label(cleared)

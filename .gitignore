@@ -19,6 +19,11 @@ DATA/subset*/
 DATA/*.zip
 DATA/*.tar.gz
 
+# Downloaded annotated image dataset and local detector outputs
+Lung Nodules Detection Dataset Annotations/
+/models/nodule_detector/
+/runs/
+
 # OS specific
 .DS_Store
 Thumbs.db

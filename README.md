@@ -1,95 +1,93 @@
-# 🫁 PulmoAI: Lung Cancer Detection & Malignancy Classification System
-> **5th Semester Capstone Project**  
-> *A 2-Stage CADe/CADx Deep Learning Framework for Pulmonary Nodule Detection, Malignancy Risk Grading, and Explainable AI (XAI) on CT Scans.*
+# PulmoAI: 2D lung nodule localization
 
----
+PulmoAI is a research prototype for finding annotated lung nodules in 2D CT images. The active workflow is aligned to the required **Lung Nodules Detection Dataset Annotations** dataset and its bounding-box labels.
 
-## 📌 Project Overview
-Lung cancer remains one of the leading causes of cancer-related mortality globally. Early detection of malignant pulmonary nodules via Computed Tomography (CT) scans substantially improves 5-year patient survival rates.
+## Research context
 
-This project implements an end-to-end Computer-Aided Detection and Diagnosis (CADe/CADx) pipeline inspired by state-of-the-art literature published in *ScienceDirect (Biomedical Engineering Advances, 2025)*.
+The reference is Nguyen's 2025 scoping review, [“A scoping review of deep learning approaches for lung cancer detection using chest radiographs and computed tomography scans”](https://doi.org/10.1016/j.bea.2024.100138). It surveys published approaches; it does not prescribe a single model to reproduce. This project applies the review's CT detection context to the labels actually available here: 2D object localization with a lightweight pretrained YOLO detector.
 
-```mermaid
-flowchart LR
-    A[Thoracic CT Scan] --> B[Lung ROI Extraction]
-    B --> C[Stage 1: Attention U-Net Nodule Segmentation]
-    C --> D[Stage 2: Transfer Learning Malignancy Classifier]
-    D --> E[Explainable AI: Grad-CAM Saliency Maps]
-    E --> F[Interactive Streamlit Doctor Web Dashboard]
-```
+The model choice is based on the dataset format, not a claim that the review selected YOLO26. The detector reports bounding boxes, numeric class IDs, and confidence scores. It does not diagnose cancer.
 
----
+## Dataset
 
-## ✨ Key Features & Architecture
+Source: [Lung Nodules Detection Dataset Annotations on Kaggle](https://www.kaggle.com/datasets/younesselbrag/lung-nodules-detection-dataset-annotations).
 
-1. **Stage 1: Attention U-Net Nodule Segmentation**
-   * Incorporates **Spatial Attention Gates** to focus on suspicious lung lesions while filtering out normal vascular tree markings and rib bone artifacts.
-   * Uses **Combo Loss (Focal Tversky Loss + BCE)** to overcome the extreme class imbalance in CT scans where nodules occupy $<0.1\%$ of total volume.
+Expected local structure:
 
-2. **Stage 2: Malignancy Classification (Benign vs. Malignant)**
-   * Extracts detected nodule candidate patches and classifies them into **Benign (Low Risk)** vs. **Malignant (Cancerous)** using transfer learning backbones (**EfficientNet-V2 / ResNet-50**).
-
-3. **Explainable AI (Grad-CAM XAI)**
-   * Generates saliency heatmaps showing the morphological features (spiculation, density, ground-glass opacity) that influenced the prediction, overcoming the clinical "black box" hurdle.
-
-4. **Clinical Evaluation Metrics**
-   * Tracks **Sensitivity (Recall)**, **Specificity**, **Precision (PPV)**, **NPV**, **F1-Score**, **ROC-AUC**, and **Dice Similarity Coefficient**.
-
-5. **Interactive Web Dashboard (`app.py`)**
-   * Built with **Streamlit** for real-time CT slice upload, segmentation mask overlay, malignancy confidence gauges, and clinical report exports.
-
----
-
-## 📂 Repository Structure
-
-```
+```text
 Lung_Cancer_Detection/
-├── app.py                      # Interactive Streamlit Web UI Application
-├── src/
-│   ├── models/
-│   │   ├── attention_unet.py   # Attention U-Net architecture & custom losses
-│   │   └── malignancy_classifier.py # Stage-2 Transfer Learning Classifier
-│   ├── xai/
-│   │   └── gradcam.py          # Grad-CAM visual explainability module
-│   ├── evaluation/
-│   │   └── metrics.py          # Clinical & segmentation metrics calculator
-│   └── utils/
-│       └── ct_processor.py     # HU normalization, Lung ROI, & nodule cropper
-├── notebooks/
-│   ├── v1/                     # Baseline exploratory notebooks
-│   └── v2/                     # Enhanced LUNA16 dataset processing notebooks
-├── DATA/
-│   └── annotations.csv         # LUNA16 ground-truth nodule coordinates
-└── README.md
+└── Lung Nodules Detection Dataset Annotations/
+    └── ct_images/
+        ├── images/
+        │   ├── train/
+        │   └── val/
+        └── labels/
+            ├── train/
+            └── val/
 ```
 
----
+The label rows use normalized YOLO box format:
 
-## 🚀 Quick Start & Installation
-
-### 1. Clone & Install Dependencies
-```bash
-git clone https://github.com/Satyam-50/Lung_Cancer_Detection-capston-project-sem-5th-.git
-cd Lung_Cancer_Detection-capston-project-sem-5th-
-pip install -r requirements.txt   # or pip install tensorflow streamlit SimpleITK scikit-image opencv-python
+```text
+class_id x_center y_center width height
 ```
 
-### 2. Launch the Web Application
-```bash
+The current local copy has 239 training images and 41 validation images. Its label files use class IDs `0` and `1`, but the downloaded folder does not include class names. Until the dataset owner confirms their meanings, the project keeps them as generic `class_0` and `class_1`; it does not call them benign or malignant.
+
+### Dataset integrity notes
+
+- All 41 validation images are exact image-content duplicates of files in the training folder, and their paired annotation text matches. `scripts/train_detector.py` excludes the train-side duplicates when it generates training manifests. The downloaded data is not rewritten.
+- There are 10 extra training label files without matching images. The app reports these; training ignores them because no image can be paired with them.
+- The validation set is small and the dataset has no separate test or external validation cohort. Treat resulting metrics as exploratory only.
+
+## Install and run
+
+```powershell
+python -m pip install -r requirements.txt
 streamlit run app.py
 ```
-Open `http://localhost:8501` in your browser.
 
----
+If the dataset is stored elsewhere, set its root to the directory containing `images` and `labels`:
 
-## 📊 Dataset Benchmark
-This project benchmarks against the gold-standard datasets:
-* **LUNA16 (LUng Nodule Analysis 2016)**
-* **LIDC-IDRI (Lung Image Database Consortium)**
+```powershell
+$env:PULMOAI_DATASET_ROOT = "D:\path\to\ct_images"
+streamlit run app.py
+```
 
-For training locally, download `subset0.zip` from [Kaggle LUNA16](https://www.kaggle.com/datasets/luna16) and place it in `DATA/subset0/`.
+The **Dataset explorer** page previews the reference boxes and audits the splits. The **Detector** page displays dataset labels as ground truth and runs predictions only after a trained `.pt` checkpoint exists.
 
----
+## Train the detector
 
-## 📜 Academic Reference
-* *Nguyen, M.N. (2025). "A scoping review of deep learning approaches for lung cancer detection using chest radiographs and computed tomography scans." Biomedical Engineering Advances, Elsevier (ScienceDirect).*
+```powershell
+python scripts/train_detector.py
+```
+
+The script starts from the lightweight pretrained `yolo26n.pt` model, trains at the dataset's 256-pixel image size, and evaluates on the deduplicated validation list. It saves its generated manifests, dataset configuration, weights, and validation outputs under `models/nodule_detector/`. The Streamlit app automatically loads the newest `train*/weights/best.pt` checkpoint.
+
+Optional arguments:
+
+```powershell
+python scripts/train_detector.py --epochs 60 --imgsz 256 --batch 8 --device cpu
+```
+
+The training script can also receive another dataset root with `--dataset PATH` or the `PULMOAI_DATASET_ROOT` environment variable.
+
+## Scope and limitations
+
+This dataset supports **2D nodule/finding localization**. It does not provide 3D CT volumes, pixel-level nodule masks, or malignancy/outcome labels. Therefore the active project does not train or report:
+
+- U-Net segmentation or Dice scores;
+- benign-versus-malignant classification or cancer-risk probabilities;
+- 3D analysis, volumetry, or patient-level diagnosis;
+- synthetic Grad-CAM explanations or fabricated benchmark metrics.
+
+The earlier LUNA16 files in `DATA/annotations.csv`, the `.h5` weights under `models/v1` and `models/v2`, and the older U-Net/classifier notebooks are retained as separate legacy experiments. They are not loaded by this dataset-specific app workflow.
+
+## Repository map
+
+```text
+app.py                    Streamlit detector and dataset explorer
+src/data/yolo_dataset.py  YOLO label parsing, visualization, and integrity audit
+scripts/train_detector.py Dataset-aware training and deduplicated split generation
+DATA/annotations.csv      Legacy LUNA16 3D-coordinate annotations
+```
