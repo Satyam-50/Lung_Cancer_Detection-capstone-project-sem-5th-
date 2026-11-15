@@ -7,6 +7,7 @@ __pycache__/
 env/
 venv/
 ENV/
+.venv/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
@@ -21,8 +22,12 @@ DATA/*.tar.gz
 
 # Downloaded annotated image dataset and local detector outputs
 Lung Nodules Detection Dataset Annotations/
+The IQ-OTHNCCD lung cancer dataset/
 /models/nodule_detector/
+/models/iq_oth_classifier/
 /runs/
+/yolo26n.pt
+/tmp/
 
 # OS specific
 .DS_Store

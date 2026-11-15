@@ -4,6 +4,58 @@ from sklearn.metrics import (
     f1_score, roc_auc_score, confusion_matrix, roc_curve
 )
 
+
+def classification_metrics_from_confusion(confusion, class_names):
+    """Return accuracy and one-vs-rest metrics for a multiclass confusion matrix."""
+    matrix = np.asarray(confusion, dtype=np.int64)
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        raise ValueError("Confusion matrix must be a square 2D array.")
+    if len(class_names) != matrix.shape[0]:
+        raise ValueError("Provide one class name for each confusion-matrix row.")
+
+    total = int(matrix.sum())
+    correct = int(np.trace(matrix))
+    per_class = {}
+    precisions, recalls, specificities, f1_scores, supports = [], [], [], [], []
+
+    for index, name in enumerate(class_names):
+        true_positive = int(matrix[index, index])
+        false_positive = int(matrix[:, index].sum()) - true_positive
+        false_negative = int(matrix[index, :].sum()) - true_positive
+        true_negative = total - true_positive - false_positive - false_negative
+        support = int(matrix[index, :].sum())
+        precision = true_positive / max(1, true_positive + false_positive)
+        recall = true_positive / max(1, true_positive + false_negative)
+        specificity = true_negative / max(1, true_negative + false_positive)
+        f1 = 2 * precision * recall / max(1e-12, precision + recall)
+        per_class[str(name)] = {
+            "precision": precision,
+            "recall": recall,
+            "specificity": specificity,
+            "f1": f1,
+            "support": support,
+        }
+        precisions.append(precision)
+        recalls.append(recall)
+        specificities.append(specificity)
+        f1_scores.append(f1)
+        supports.append(support)
+
+    macro = lambda values: float(np.mean(values)) if values else 0.0
+    weighted_f1 = (
+        float(np.average(f1_scores, weights=supports)) if sum(supports) else 0.0
+    )
+    return {
+        "accuracy": correct / max(1, total),
+        "macro_precision": macro(precisions),
+        "macro_recall": macro(recalls),
+        "macro_specificity": macro(specificities),
+        "macro_f1": macro(f1_scores),
+        "weighted_f1": weighted_f1,
+        "per_class_metrics": per_class,
+        "sample_count": total,
+    }
+
 def compute_segmentation_metrics(y_true, y_pred, threshold=0.5):
     """
     Computes standard segmentation metrics: Dice Score (F1) and IoU (Jaccard).

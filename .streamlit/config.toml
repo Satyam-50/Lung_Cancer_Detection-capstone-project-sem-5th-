@@ -1,0 +1,20 @@
+[theme]
+base = "dark"
+primaryColor = "#45D6C8"
+backgroundColor = "#0B131D"
+secondaryBackgroundColor = "#142130"
+textColor = "#EAF1F7"
+font = "sans-serif"
+baseRadius = "medium"
+borderColor = "#26394B"
+showWidgetBorder = true
+chartCategoricalColors = ["#45D6C8", "#78A9FF", "#F6C45B", "#F07F73"]
+
+[theme.sidebar]
+backgroundColor = "#101B27"
+secondaryBackgroundColor = "#142130"
+textColor = "#EAF1F7"
+borderColor = "#26394B"
+
+[server]
+maxUploadSize = 50
