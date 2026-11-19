@@ -169,6 +169,36 @@ def render_audit_summary(audit: dict) -> None:
     metrics[3].metric("Exact train/validation overlaps", audit["train_overlap_count"])
 
 
+def render_centered_table(
+    frame: pd.DataFrame,
+    *,
+    percentage_columns: tuple[str, ...] = (),
+    integer_columns: tuple[str, ...] = (),
+    hide_index: bool = False,
+) -> None:
+    """Render compact results tables with centered headers and centered cell values."""
+    formatters = {
+        column: "{:.2%}".format
+        for column in percentage_columns
+        if column in frame.columns
+    }
+    formatters.update(
+        {
+            column: "{:,.0f}".format
+            for column in integer_columns
+            if column in frame.columns
+        }
+    )
+    styled_frame = frame.style.format(formatters).set_table_styles(
+        [
+            {"selector": "th", "props": [("text-align", "center"), ("vertical-align", "middle")]},
+            {"selector": "td", "props": [("text-align", "center"), ("vertical-align", "middle")]},
+        ],
+        overwrite=False,
+    )
+    st.table(styled_frame, hide_index=hide_index)
+
+
 def render_reference_image(image: Image.Image, labels: list[dict], caption: str) -> None:
     overlay = draw_yolo_boxes(image, labels)
     st.image(
@@ -560,14 +590,19 @@ elif page == "Model performance":
                 height=300,
                 alt="Precision, recall, and F1 by IQ-OTH/NCCD dataset label",
             )
-            st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+            render_centered_table(
+                pd.DataFrame(rows),
+                percentage_columns=("Precision", "Recall", "Specificity", "F1 score"),
+                integer_columns=("Support",),
+                hide_index=True,
+            )
 
         if confusion:
             st.subheader("Confusion matrix")
             st.caption("Rows are the true dataset labels; columns are the model predictions.")
-            st.dataframe(
+            render_centered_table(
                 pd.DataFrame(confusion, index=class_names, columns=class_names),
-                width="stretch",
+                integer_columns=tuple(class_names),
             )
         st.caption("Confusion matrix cells show image counts, not percentages.")
 
@@ -627,20 +662,29 @@ elif page == "Model performance":
             column.metric(label, f"{value * 100:.2f}%" if value is not None else "N/A")
         per_class = detector_report.get("per_class_metrics", {})
         if per_class:
-            st.dataframe(
+            render_centered_table(
                 pd.DataFrame(
-                    [{"Detector class": name, **values} for name, values in per_class.items()]
+                    [
+                        {
+                            "Detector class": name,
+                            "Precision": values.get("precision"),
+                            "Recall": values.get("recall"),
+                            "mAP @ 0.5": values.get("map50"),
+                            "mAP @ 0.5:0.95": values.get("map50_95"),
+                        }
+                        for name, values in per_class.items()
+                    ]
                 ),
+                percentage_columns=("Precision", "Recall", "mAP @ 0.5", "mAP @ 0.5:0.95"),
                 hide_index=True,
-                width="stretch",
             )
         matrix = detector_report.get("confusion_matrix")
         matrix_labels = detector_report.get("confusion_matrix_labels", [])
         if matrix and len(matrix_labels) == len(matrix):
             st.caption("Detector confusion matrix, including the background row/column.")
-            st.dataframe(
+            render_centered_table(
                 pd.DataFrame(matrix, index=matrix_labels, columns=matrix_labels),
-                width="stretch",
+                integer_columns=tuple(matrix_labels),
             )
         matrix_image = Path(detector_report.get("confusion_matrix_image", ""))
         if matrix_image.is_file():
